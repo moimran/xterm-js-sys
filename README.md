@@ -15,7 +15,7 @@ Currently this covers most of the [xterm.js API](https://github.com/xtermjs/xter
 
 This crate has two features:
    - `ext`: Adds some nicer, more rust-y functions on top of the core bindings; all the functions are in [this module][ext].
-   - `crossterm-support`: Provides a wrapper type that let's [`crossterm`][crossterm] use xterm.js as a backend (located [here][crossterm-support]). This enables xterm.js to be used with, for example,the [tui][tui] crate. Usually you won't have to enable this feature yourself; you _should_ be able to just use [`crossterm`][crossterm] and pass it a [`Terminal`].
+   - `crossterm-support`: Provides a wrapper type that let's [`crossterm`][crossterm] use xterm.js as a backend (located [here][crossterm-support]). This enables xterm.js to be used with, for example, the [tui][tui] crate. Usually you won't have to enable this feature yourself; you _should_ be able to just use [`crossterm`][crossterm] and pass it a [`Terminal`]. Note: crossterm examples have been removed due to compilation issues with WASM target.
 
 This crate also does support the infrastructure [xterm.js][xterm] has for [addons](https://github.com/xtermjs/xterm.js#addons). It also lets you [define your own addons in Rust][addon-ext-docs], if you'd like. Currently only the [xterm-addon-fit](https://github.com/xtermjs/xterm.js/tree/master/addons/xterm-addon-fit) package has [Rust bindings][fit-addon]. If you do end up making bindings for an [xterm.js][xterm] addon (or your own addon in Rust), feel free to send in a PR to update this list!
 
@@ -43,23 +43,23 @@ First party addon packages:
 Add this to your `Cargo.toml`:
 ```TOML
 [dependencies]
-xterm-js-sys = "4.6.0-alpha1"
+xterm-js-sys = "5.5.0-alpha1"
 ```
 
-And make sure that your bundler/JS package manager is set to grab the corresponding verison of the [xterm.js][xterm] package. The examples in this repo use [parcel][parcel] for which all that's needed is adding `xterm` to your [`package.json`][package.json]:
+And make sure that your bundler/JS package manager is set to grab the corresponding version of the [xterm.js][xterm] package. The examples in this repo use [parcel][parcel] for which all that's needed is adding `@xterm/xterm` to your [`package.json`][package.json]:
 ```JSON
   "dependencies": {
-    "xterm": "^4.6.0"
+    "@xterm/xterm": "^5.5.0"
   }
 ```
 
 Make sure you also add the packages for any addons you're using; see our [examples' `package.json`][package.json] for an example.
 
-The [xterm.js documentation](https://xtermjs.org/docs/) is a good reference for actual usage of the API; these bindings are usually one to one. Though, as of this writing, the xterm.js docs still correspond to version 4.4.
+The [xterm.js documentation](https://xtermjs.org/docs/) is a good reference for actual usage of the API; these bindings are usually one to one. This version supports xterm.js v5.5.0.
 
 ## Examples
 
-This repo has a [few examples][examples-src] that show usage of the bindings, usage with the `ext` feature, and usage with [`crossterm`][crossterm] and the [`tui`][tui] crate.
+This repo has a [basic example][examples-src] that shows usage of the bindings and the `ext` feature.
 
 To build these, enter the folder of the example you wish to run (i.e. [examples/basic][examples-src-basic]) and:
   - install the packages (`npm i` or `yarn install`)

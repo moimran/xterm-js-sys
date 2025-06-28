@@ -25,31 +25,29 @@ impl Theme {
     #[rustfmt::skip]
     #[must_use]
     pub fn nord() -> Self {
-        Self::default()
-            // ? (0m)
-            // ? (1m)
+        let mut theme = Self::default();
 
-            .with_black(c!(0x343434))
-            .with_bright_black(c!(0x434c5e))
-            .with_red(c!(0xbf616a))
-            .with_bright_red(c!(0xbf616a))
-            .with_green(c!(0xa3be8c))
-            .with_bright_green(c!(0xa3be8c))
-            .with_yellow(c!(0xebcb8b))
-            .with_bright_yellow(c!(0xebcb8b))
-            .with_blue(c!(0x81a1c1))
-            .with_bright_blue(c!(0x81a1c1))
-            .with_magenta(c!(0xb48ead))
-            .with_bright_magenta(c!(0xb48ead))
-            .with_cyan(c!(0x88c0d0))
-            .with_bright_cyan(c!(0x8fbcbb))
-            .with_white(c!(0xe5e9f0))
-            .with_bright_white(c!(0xeceff4))
+        // Set colors using the setter methods
+        theme.set_black(Some(c!(0x343434)));
+        theme.set_bright_black(Some(c!(0x434c5e)));
+        theme.set_red(Some(c!(0xbf616a)));
+        theme.set_bright_red(Some(c!(0xbf616a)));
+        theme.set_green(Some(c!(0xa3be8c)));
+        theme.set_bright_green(Some(c!(0xa3be8c)));
+        theme.set_yellow(Some(c!(0xebcb8b)));
+        theme.set_bright_yellow(Some(c!(0xebcb8b)));
+        theme.set_blue(Some(c!(0x81a1c1)));
+        theme.set_bright_blue(Some(c!(0x81a1c1)));
+        theme.set_magenta(Some(c!(0xb48ead)));
+        theme.set_bright_magenta(Some(c!(0xb48ead)));
+        theme.set_cyan(Some(c!(0x88c0d0)));
+        theme.set_bright_cyan(Some(c!(0x8fbcbb)));
+        theme.set_white(Some(c!(0xe5e9f0)));
+        theme.set_bright_white(Some(c!(0xeceff4)));
 
-            .with_background(c!(0x2e3440))
-            .with_foreground(c!(0xd8dee9))
+        theme.set_background(Some(c!(0x2e3440)));
+        theme.set_foreground(Some(c!(0xd8dee9)));
 
-            // .with_cursor()
-            // .with_cursor_accent()
+        theme
     }
 }

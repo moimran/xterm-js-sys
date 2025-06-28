@@ -1,0 +1,31 @@
+{
+  "name": "xterm-js-sys-feature-showcase",
+  "version": "5.5.0-alpha1",
+  "description": "Comprehensive feature showcase for xterm-js-sys v5.5.0",
+  "main": "index.html",
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg && parcel build index.html",
+    "dev": "wasm-pack build --target web --out-dir pkg && parcel serve index.html",
+    "clean": "rm -rf pkg dist .parcel-cache"
+  },
+  "dependencies": {
+    "@xterm/xterm": "^5.5.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0"
+  },
+  "devDependencies": {
+    "@parcel/transformer-toml": "^2.15.4",
+    "parcel": "^2.12.0"
+  },
+  "keywords": [
+    "xterm",
+    "terminal",
+    "wasm",
+    "rust",
+    "webassembly",
+    "showcase",
+    "demo"
+  ],
+  "author": "xterm-js-sys contributors",
+  "license": "MIT"
+}

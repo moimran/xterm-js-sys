@@ -1,442 +1,189 @@
-//! Helpers for [`TerminalOptions`], [`Theme`], and [`WindowOptions`].
+//! Simplified helpers for [`TerminalOptions`] and [`Theme`].
+//!
+//! This module provides builder-style methods for creating and configuring
+//! xterm.js options in a more Rust-friendly way.
 //!
 //! [`TerminalOptions`]: crate::xterm::TerminalOptions
 //! [`Theme`]: crate::xterm::Theme
-//! [`WindowOptions`]: crate::xterm::WindowOptions
 
-use super::calculated_doc;
 use crate::xterm::{
-    BellStyle, CursorStyle, FastScrollModifier, FontWeight, LogLevel,
-    RendererType, TerminalOptions, Theme, WindowOptions,
+    BellStyle, CursorStyle, LogLevel, TerminalOptions, Theme,
 };
 
-// TODO: if we give in and use paste this can become a lot cleaner (we can just
-// fold this into the `wasm_struct!` invocation).
-
-#[doc(hidden)]
-macro_rules! check_invalid {
-    ([catch: as with non-Copy] set($($setter_name:ident)?) ty(Str)) => {
-        check_invalid!{
-            two-is-an-error
-            "Can't use a string field with `as`; you have to use the \
-            `use(_, _)` syntax for non-Copy fields:"
-            $($setter_name)?
-            Str
-        }
-    };
-
-    ([catch: as with non-Copy] set($($setter_name:ident)?) ty($other:tt)) => {};
-
-    (two-is-an-error $msg:literal $one:ident $two:ident) => {
-        core::compile_error!($msg);
-    };
-    (two-is-an-error $msg:literal $one:ident) => { };
-    (two-is-an-error $msg:literal) => { };
+/// Extension trait for [`TerminalOptions`] providing builder-style methods.
+pub trait TerminalOptionsExt {
+    /// Set the log level and return self for chaining.
+    fn with_log_level(self, log_level: LogLevel) -> Self;
+    
+    /// Set the font size and return self for chaining.
+    fn with_font_size(self, font_size: f32) -> Self;
+    
+    /// Set the number of columns and return self for chaining.
+    fn with_cols(self, cols: u16) -> Self;
+    
+    /// Set the number of rows and return self for chaining.
+    fn with_rows(self, rows: u16) -> Self;
+    
+    /// Set the cursor style and return self for chaining.
+    fn with_cursor_style(self, cursor_style: CursorStyle) -> Self;
+    
+    /// Set whether the cursor blinks and return self for chaining.
+    fn with_cursor_blink(self, cursor_blink: bool) -> Self;
+    
+    /// Set the bell style and return self for chaining.
+    fn with_bell_style(self, bell_style: BellStyle) -> Self;
+    
+    /// Set whether to convert EOL and return self for chaining.
+    fn with_convert_eol(self, convert_eol: bool) -> Self;
+    
+    /// Set the scrollback amount and return self for chaining.
+    fn with_scrollback(self, scrollback: u32) -> Self;
+    
+    /// Set the tab stop width and return self for chaining.
+    fn with_tab_stop_width(self, tab_stop_width: u16) -> Self;
 }
 
-macro_rules! opt_setter {
-    (// The non-Copy case for Strings
-        nom($nom:path)
-        pub_getter($pub_getter:ident)
-        pub_setter($pub_setter:ident)
-        setter_name($setter_name:ident)
-        setter_name_new()
-        field($field:ident)
-        ty(Str)
-    ) => {
-        calculated_doc! {
-            #[doc = core::concat!(
-                "Builder pattern setter for [`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($field),
-                "`]",
-                " (accessible through ",
-                "[`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($pub_getter),
-                "`] and [`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($pub_setter),
-                "`].",
-            )]
-            >>>
-            pub fn $setter_name<S: ToString>(
-                mut self,
-                $field: S,
-            ) -> Self {
-                self.$field = Some($field.to_string());
-                self
-            }
-            #[allow(deprecated)]
-            #[must_use]
-        }
-    };
-
-    (// The non-Copy case for non-Strings
-        nom($nom:path)
-        pub_getter($pub_getter:ident)
-        pub_setter($pub_setter:ident)
-        setter_name($setter_name:ident)
-        setter_name_new()
-        field($field:ident)
-        ty($ty:ty)
-    ) => {
-        calculated_doc! {
-            #[doc = core::concat!(
-                "Builder pattern setter for [`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($field),
-                "`]",
-                " (accessible through ",
-                "[`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($pub_getter),
-                "`] and [`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($pub_setter),
-                "`].",
-            )]
-            >>>
-            // This can't be const because some of these non-Copy fields
-            // that have setters and getters implement `Drop` (i.e.
-            // `String`) which means they can't be used in const setter
-            // functions since we can't drop things with destructors in
-            // const functions.
-            //
-            pub /*const*/ fn $setter_name(mut self, $field: $ty) -> Self {
-                self.$field = Some($field);
-                self
-            }
-            #[allow(deprecated)]
-            #[must_use]
-        }
-    };
-
-    (// The Copy case
-        nom($nom:path)
-        pub_getter()
-        pub_setter()
-        setter_name()
-        setter_name_new($setter_name:ident)
-        field($field:ident)
-        ty($ty:ty)
-        // str()
-    ) => {
-        calculated_doc! {
-            #[doc = core::concat!(
-                "Builder pattern setter for [`",
-                    core::stringify!($nom),
-                    "::",
-                    core::stringify!($field),
-                "`].",
-            )]
-            >>>
-            pub const fn $setter_name(mut self, $field: $ty) -> Self {
-                self.$field = Some($field);
-                self
-            }
-            #[allow(deprecated)]
-            #[must_use]
-        }
-    };
-}
-
-/// Generates setters and a constructor for a struct made of `Option`al fields.
-macro_rules! opt_struct {
-    ($nom:path {
-        $(
-            $(use($pub_getter:ident, $pub_setter:ident) as $setter_name:ident)?
-            $(as $setter_name_new:ident)?
-                => $field:ident: $ty:tt
-        ),*
-        $(,)?
-    }) => {
-        impl $nom {
-            calculated_doc! {
-                #[doc = core::concat!(
-                    "Constructor for [`",
-                        core::stringify!($nom),
-                    "`].",
-                )]
-                >>>
-                pub const fn default() -> Self {
-                    Self {$(
-                        $field: None,
-                    )*}
-                }
-                #[allow(deprecated)]
-                #[must_use]
-            }
-
-            $(
-                check_invalid! {
-                    [catch: as with non-Copy]
-                    set($($setter_name_new)?)
-                    ty($ty)
-                }
-
-                opt_setter! {
-                    nom($nom)
-                    pub_getter($($pub_getter)?)
-                    pub_setter($($pub_setter)?)
-                    setter_name($($setter_name)?)
-                    setter_name_new($($setter_name_new)?)
-                    field($field)
-                    ty($ty)
-                }
-            )*
-        }
-    };
-}
-
-opt_struct! {
-    TerminalOptions {
-        as with_allow_proposed_api
-            => allow_proposed_api: bool,
-
-        as with_allow_transparency
-            => allow_transparency: bool,
-
-        use (bell_sound, set_bell_sound) as with_bell_sound
-            => bell_sound: Str,
-
-        as with_bell_style
-            => bell_style: BellStyle,
-
-        as with_cols
-            => cols: u16,
-
-        as with_convert_eol
-            => convert_eol: bool,
-
-        as with_cursor_blink
-            => cursor_blink: bool,
-
-        as with_cursor_style
-            => cursor_style: CursorStyle,
-
-        as with_cursor_width
-            => cursor_width: f32,
-
-        as with_disable_stdin
-            => disable_stdin: bool,
-
-        as with_draw_bold_text_in_bright_colors
-            => draw_bold_text_in_bright_colors: bool,
-
-        as with_fast_scroll_modifier
-            => fast_scroll_modifier: FastScrollModifier,
-
-        as with_fast_scroll_sensitivity
-            => fast_scroll_sensitivity: f32,
-
-        use (font_family, set_font_family) as with_font_family
-            => font_family: Str,
-
-        as with_font_size
-            => font_size: f32,
-
-        as with_font_weight
-            => font_weight: f32,
-
-        as with_font_weight_bold
-            => font_weight_bold: FontWeight,
-
-        as with_letter_spacing
-            => letter_spacing: u16,
-
-        as with_line_height
-            => line_height: u16,
-
-        as with_link_tooltip_hover_duration
-            => link_tooltip_hover_duration: u16,
-
-        as with_log_level
-            => log_level: LogLevel,
-
-        as with_mac_option_click_forces_selection
-            => mac_option_click_forces_selection: bool,
-
-        as with_mac_option_is_meta
-            => mac_option_is_meta: bool,
-
-        as with_minimum_contrast_ratio
-            => minimum_contrast_ratio: f32,
-
-        as with_renderer_type
-            => renderer_type: RendererType,
-
-        as with_right_click_selects_word
-            => right_click_selects_word: bool,
-
-        as with_rows
-            => rows: u16,
-
-        as with_screen_reader_mode
-            => screen_reader_mode: bool,
-
-        as with_scroll_sensitivity
-            => scroll_sensitivity: f32,
-
-        as with_scrollback
-            => scrollback: u32,
-
-        as with_tab_stop_width
-            => tab_stop_width: u16,
-
-        use (theme, set_theme) as with_theme
-            => theme: Theme,
-
-        use (window_options, set_window_options) as with_window_options
-            => window_options: WindowOptions,
-
-        as with_windows_mode
-            => windows_mode: bool,
-
-        use (word_separator, set_word_separator) as with_word_separator
-            => word_separator: Str,
+impl TerminalOptionsExt for TerminalOptions {
+    fn with_log_level(mut self, log_level: LogLevel) -> Self {
+        self.log_level = Some(log_level);
+        self
+    }
+    
+    fn with_font_size(mut self, font_size: f32) -> Self {
+        self.font_size = Some(font_size);
+        self
+    }
+    
+    fn with_cols(mut self, cols: u16) -> Self {
+        self.cols = Some(cols);
+        self
+    }
+    
+    fn with_rows(mut self, rows: u16) -> Self {
+        self.rows = Some(rows);
+        self
+    }
+    
+    fn with_cursor_style(mut self, cursor_style: CursorStyle) -> Self {
+        self.cursor_style = Some(cursor_style);
+        self
+    }
+    
+    fn with_cursor_blink(mut self, cursor_blink: bool) -> Self {
+        self.cursor_blink = Some(cursor_blink);
+        self
+    }
+    
+    fn with_bell_style(mut self, bell_style: BellStyle) -> Self {
+        self.bell_style = Some(bell_style);
+        self
+    }
+    
+    fn with_convert_eol(mut self, convert_eol: bool) -> Self {
+        self.convert_eol = Some(convert_eol);
+        self
+    }
+    
+    fn with_scrollback(mut self, scrollback: u32) -> Self {
+        self.scrollback = Some(scrollback);
+        self
+    }
+    
+    fn with_tab_stop_width(mut self, tab_stop_width: u16) -> Self {
+        self.tab_stop_width = Some(tab_stop_width);
+        self
     }
 }
 
-opt_struct! {
-    Theme {
-        use (background, set_background) as with_background
-            => background: Str,
-
-        use (black, set_black) as with_black
-            => black: Str,
-
-        use (blue, set_blue) as with_blue
-            => blue: Str,
-
-        use (bright_black, set_bright_black) as with_bright_black
-            => bright_black: Str,
-
-        use (bright_blue, set_bright_blue) as with_bright_blue
-            => bright_blue: Str,
-
-        use (bright_cyan, set_bright_cyan) as with_bright_cyan
-            => bright_cyan: Str,
-
-        use (bright_green, set_bright_green) as with_bright_green
-            => bright_green: Str,
-
-        use (bright_magenta, set_bright_magenta) as with_bright_magenta
-            => bright_magenta: Str,
-
-        use (bright_red, set_bright_red) as with_bright_red
-            => bright_red: Str,
-
-        use (bright_white, set_bright_white) as with_bright_white
-            => bright_white: Str,
-
-        use (bright_yellow, set_bright_yellow) as with_bright_yellow
-            => bright_yellow: Str,
-
-        use (cursor, set_cursor) as with_cursor
-            => cursor: Str,
-
-        use (cursor_accent, set_cursor_accent) as with_cursor_accent
-            => cursor_accent: Str,
-
-        use (cyan, set_cyan) as with_cyan
-            => cyan: Str,
-
-        use (foreground, set_foreground) as with_foreground
-            => foreground: Str,
-
-        use (green, set_green) as with_green
-            => green: Str,
-
-        use (magenta, set_magenta) as with_magenta
-            => magenta: Str,
-
-        use (red, set_red) as with_red
-            => red: Str,
-
-        use (selection, set_selection) as with_selection
-            => selection: Str,
-
-        use (white, set_white) as with_white
-            => white: Str,
-
-        use (yellow, set_yellow) as with_yellow
-            => yellow: Str,
-    }
+/// Extension trait for [`Theme`] providing builder-style methods.
+pub trait ThemeExt {
+    /// Set the foreground color and return self for chaining.
+    fn with_foreground<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the background color and return self for chaining.
+    fn with_background<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the cursor color and return self for chaining.
+    fn with_cursor<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the black color and return self for chaining.
+    fn with_black<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the red color and return self for chaining.
+    fn with_red<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the green color and return self for chaining.
+    fn with_green<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the yellow color and return self for chaining.
+    fn with_yellow<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the blue color and return self for chaining.
+    fn with_blue<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the magenta color and return self for chaining.
+    fn with_magenta<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the cyan color and return self for chaining.
+    fn with_cyan<S: Into<String>>(self, color: S) -> Self;
+    
+    /// Set the white color and return self for chaining.
+    fn with_white<S: Into<String>>(self, color: S) -> Self;
 }
 
-opt_struct! {
-    WindowOptions {
-        as with_fullscreen_win
-            => fullscreen_win: bool,
-
-        as with_get_cell_size_pixels
-            => get_cell_size_pixels: bool,
-
-        as with_get_icon_title
-            => get_icon_title: bool,
-
-        as with_get_screen_size_chars
-            => get_screen_size_chars: bool,
-
-        as with_get_screen_size_pixels
-            => get_screen_size_pixels: bool,
-
-        as with_get_win_position
-            => get_win_position: bool,
-
-        as with_get_win_size_chars
-            => get_win_size_chars: bool,
-
-        as with_get_win_size_pixels
-            => get_win_size_pixels: bool,
-
-        as with_get_win_state
-            => get_win_state: bool,
-
-        as with_get_win_title
-            => get_win_title: bool,
-
-        as with_lower_win
-            => lower_win: bool,
-
-        as with_maximize_win
-            => maximize_win: bool,
-
-        as with_minimize_win
-            => minimize_win: bool,
-
-        as with_pop_title
-            => pop_title: bool,
-
-        as with_push_title
-            => push_title: bool,
-
-        as with_raise_win
-            => raise_win: bool,
-
-        as with_refresh_win
-            => refresh_win: bool,
-
-        as with_restore_win
-            => restore_win: bool,
-
-        as with_set_win_lines
-            => set_win_lines: bool,
-
-        as with_set_win_position
-            => set_win_position: bool,
-
-        as with_set_win_size_chars
-            => set_win_size_chars: bool,
-
-        as with_set_win_size_pixels
-            => set_win_size_pixels: bool,
+impl ThemeExt for Theme {
+    fn with_foreground<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_foreground(Some(color.into()));
+        self
+    }
+    
+    fn with_background<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_background(Some(color.into()));
+        self
+    }
+    
+    fn with_cursor<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_cursor(Some(color.into()));
+        self
+    }
+    
+    fn with_black<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_black(Some(color.into()));
+        self
+    }
+    
+    fn with_red<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_red(Some(color.into()));
+        self
+    }
+    
+    fn with_green<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_green(Some(color.into()));
+        self
+    }
+    
+    fn with_yellow<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_yellow(Some(color.into()));
+        self
+    }
+    
+    fn with_blue<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_blue(Some(color.into()));
+        self
+    }
+    
+    fn with_magenta<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_magenta(Some(color.into()));
+        self
+    }
+    
+    fn with_cyan<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_cyan(Some(color.into()));
+        self
+    }
+    
+    fn with_white<S: Into<String>>(mut self, color: S) -> Self {
+        self.set_white(Some(color.into()));
+        self
     }
 }

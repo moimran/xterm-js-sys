@@ -2,7 +2,6 @@
 
 use js_sys::Function;
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::Window;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

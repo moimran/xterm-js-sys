@@ -8,7 +8,7 @@
 //! ## A Live Demo
 //! <iframe
 //!     title="Terminal"
-//!     src="https://rrbutani.github.io/xterm-js-sys/examples/with-input/index.html"
+//!     src="https://rrbutani.github.io/xterm-js-sys/examples/basic/index.html"
 //!     height="600"
 //!     width="100%"
 //!     frameborder="0"
@@ -49,7 +49,7 @@
 )))]
 #![doc(
     html_logo_url = "https://avatars2.githubusercontent.com/u/11927490?s=800&v=5",
-    html_root_url = "https://docs.rs/xterm-js-sys/4.6.0", // remember to bump!
+    html_root_url = "https://docs.rs/xterm-js-sys/5.5.0", // remember to bump!
 )]
 // Note: Our MSRV doesn't have `broken_intra_doc_links` so we do this.
 #![allow(unknown_lints)]

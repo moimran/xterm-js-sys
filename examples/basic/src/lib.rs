@@ -1,6 +1,8 @@
 use console_error_panic_hook::set_once as set_panic_hook;
 use wasm_bindgen::prelude::*;
-use xterm_js_sys::xterm::{LogLevel, Terminal, TerminalOptions, Theme};
+use wasm_bindgen::JsCast;
+use xterm_js_sys::xterm::{LogLevel, Terminal, TerminalOptions, KeyEventData, ResizeEventData};
+use xterm_js_sys::ext::TerminalOptionsExt;
 
 #[path = "../../common.rs"]
 mod common;
@@ -29,21 +31,20 @@ pub fn run() -> Result<(), JsValue> {
     let document = window.document().ok_or("should have a document on window")?;
     let terminal_div = document
         .get_element_by_id("terminal")
-        .ok_or("should have a terminal div")?;
+        .ok_or("should have a terminal div")?
+        .dyn_into::<web_sys::HtmlElement>()?;
 
-    let term_orig = Terminal::new(Some(
-        TerminalOptions::default()
-            .with_log_level(LogLevel::Debug)
-            .with_theme(Theme::nord())
-            .with_font_family("'Fira Mono', monospace")
-            .with_font_size(11.0),
-    ));
+    let options = TerminalOptions::default()
+        .with_log_level(LogLevel::Debug)
+        .with_font_size(11.0);
+
+    let term_orig = Terminal::new(Some(options));
 
     term_orig.open(terminal_div);
     term_orig.write(ENABLE_MOUSE_MODE_CSI_SEQUENCE.to_string());
 
     let term = term_orig.clone();
-    let l = term_orig.attach_key_event_listener(move |e| {
+    let key_listener = Closure::wrap(Box::new(move |e: KeyEventData| {
         // A port of the xterm.js echo demo:
         let key = e.key();
         let ev = e.dom_event();
@@ -68,22 +69,30 @@ pub fn run() -> Result<(), JsValue> {
         }
 
         log!("[key event] got {:?}", e);
-    });
+    }) as Box<dyn FnMut(KeyEventData)>);
+    let l = term_orig.on_key(&key_listener);
 
-    let b = term_orig.attach_binary_event_listener(move |s| {
+    let binary_listener = Closure::wrap(Box::new(move |s: String| {
         log!("[binary event] bin: {:?}", s);
-    });
+    }) as Box<dyn FnMut(String)>);
+    let b = term_orig.on_binary(&binary_listener);
 
-    let d = term_orig.attach_data_event_listener(move |s| {
+    let data_listener = Closure::wrap(Box::new(move |s: String| {
         log!("[data event] data: {:?}", s);
-    });
+    }) as Box<dyn FnMut(String)>);
+    let d = term_orig.on_data(&data_listener);
 
-    let r = term_orig.attach_resize_event_listener(move |r| {
+    let resize_listener = Closure::wrap(Box::new(move |r: ResizeEventData| {
         log!("[resize event] resize: {:?}", r);
-    });
+    }) as Box<dyn FnMut(ResizeEventData)>);
+    let r = term_orig.on_resize(&resize_listener);
 
     // Store event listeners by leaking them - this is the simplest approach for WASM
     // where we don't have multiple threads to worry about
+    std::mem::forget(key_listener);
+    std::mem::forget(binary_listener);
+    std::mem::forget(data_listener);
+    std::mem::forget(resize_listener);
     std::mem::forget(l);
     std::mem::forget(b);
     std::mem::forget(d);

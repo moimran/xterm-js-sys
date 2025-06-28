@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xterm-js-sys v5.5.0 Feature Showcase</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .controls h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .terminal-container {
+            padding: 20px;
+            background: #1e1e1e;
+        }
+
+        #terminal {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+
+        .feature-card h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .feature-card ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #666;
+        }
+
+        .feature-card li {
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            background: #2c3e50;
+            color: white;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                padding: 15px;
+            }
+            
+            .btn {
+                display: block;
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 xterm-js-sys Feature Showcase</h1>
+            <p>Comprehensive demonstration of v5.5.0 features and improvements</p>
+            <div class="version-badge">v5.5.0-alpha1</div>
+        </div>
+
+        <div class="controls" id="controls">
+            <h3>🎮 Interactive Feature Demos</h3>
+            <p>Click the buttons below to test the new v5.5.0 methods and features:</p>
+            <!-- Buttons will be added dynamically by JavaScript -->
+        </div>
+
+        <div class="terminal-container">
+            <div id="terminal"></div>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <h4>🆕 New Methods</h4>
+                <ul>
+                    <li><code>input()</code> - Programmatic input simulation</li>
+                    <li><code>writeln()</code> - Write with automatic newline</li>
+                    <li><code>options</code> property - Direct options access</li>
+                    <li><code>clearTextureAtlas()</code> - Canvas optimization</li>
+                    <li><code>attachCustomWheelEventHandler()</code> - Custom wheel events</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h4>🔔 New Events</h4>
+                <ul>
+                    <li><code>onBell</code> - Bell notification events</li>
+                    <li><code>onWriteParsed</code> - Write parsing completion</li>
+                    <li>Enhanced event data structures</li>
+                    <li>Better event handling patterns</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h4>⚙️ Enhanced Options</h4>
+                <ul>
+                    <li><code>allowProposedApi</code> - Enable experimental features</li>
+                    <li><code>cursorInactiveStyle</code> - Inactive cursor styling</li>
+                    <li><code>customGlyphs</code> - Custom character rendering</li>
+                    <li><code>minimumContrastRatio</code> - Accessibility compliance</li>
+                    <li><code>windowsPty</code> - Windows PTY backend selection</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h4>🏗️ Builder Patterns</h4>
+                <ul>
+                    <li>Fluent <code>TerminalOptions</code> configuration</li>
+                    <li>Chainable <code>Theme</code> customization</li>
+                    <li>Type-safe option building</li>
+                    <li>Improved developer experience</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h4>🔧 Advanced Features</h4>
+                <ul>
+                    <li>Marker registration and management</li>
+                    <li>Character joiner functionality</li>
+                    <li>Terminal modes access</li>
+                    <li>Enhanced write method with Uint8Array</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h4>🏛️ Architecture</h4>
+                <ul>
+                    <li>Modular code structure</li>
+                    <li>Better maintainability</li>
+                    <li>Organized type definitions</li>
+                    <li>Clean separation of concerns</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                Built with ❤️ using 
+                <a href="https://github.com/xtermjs/xterm.js" target="_blank">xterm.js</a> and 
+                <a href="https://github.com/rustwasm/wasm-bindgen" target="_blank">wasm-bindgen</a>
+            </p>
+            <p>
+                <a href="https://github.com/moimran/xterm-js-sys" target="_blank">View on GitHub</a>
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import init from './pkg/feature_showcase.js';
+        
+        async function run() {
+            try {
+                await init();
+                console.log('🎉 Feature showcase initialized successfully!');
+            } catch (error) {
+                console.error('❌ Failed to initialize feature showcase:', error);
+                document.getElementById('terminal').innerHTML = 
+                    '<div style="color: red; padding: 20px;">Failed to load WebAssembly module. Please check the console for details.</div>';
+            }
+        }
+        
+        run();
+    </script>
+</body>
+</html>

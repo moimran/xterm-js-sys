@@ -656,10 +656,10 @@ pub mod marker;
 // pub use marker::*; // Temporarily commented to fix unused import
 
 pub mod options;
-// pub use options::*; // Temporarily commented to fix unused import
+pub use options::*;
 
 pub mod theme;
-// pub use theme::*; // Temporarily commented to fix unused import
+// pub use theme::*; // Only used internally for now
 
 pub mod unicode;
 pub use unicode::*;
