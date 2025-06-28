@@ -2,7 +2,7 @@
 name = "with-input"
 version = "0.1.0"
 authors = ["Rahul Butani <rr.but.a.n.i+crates-io@gmail.com>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 workspace = ".."
@@ -10,18 +10,19 @@ workspace = ".."
 
 [dependencies]
 xterm-js-sys = { version = "4.6.0-alpha1", features = ["crossterm-support"] }
-wasm-bindgen = "0.2.63"
-wasm-bindgen-futures = "0.4.13"
-console_error_panic_hook = "0.1.5"
-js-sys = "0.3.37"
-crossterm = { version = "0.17.5", features = ["event-stream"] }
-tui = { version = "0.9.1", default-features = false, features = ["crossterm"] }
-rand = "0.7"
+wasm-bindgen = "0.2.90"
+wasm-bindgen-futures = "0.4.40"
+console_error_panic_hook = "0.1.7"
+js-sys = "0.3.70"
+crossterm = { version = "0.27", features = ["event-stream"] }
+ratatui = { version = "0.26", default-features = false, features = ["crossterm"] }
+rand = "0.8"
 futures-util = "0.3"
+getrandom = { version = "0.2", features = ["js"] }
 
 
 [dependencies.web-sys]
-version = "0.3.37"
+version = "0.3.70"
 features = [
   'console',
   'Crypto',

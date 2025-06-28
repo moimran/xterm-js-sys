@@ -1,6 +1,6 @@
-//! This is a pretty direct port of the [sparkline demo in the tui crate][demo].
+//! This is a pretty direct port of the [sparkline demo in the ratatui crate][demo].
 //!
-//! [demo]: https://github.com/fdehau/tui-rs/blob/3f62ce9c199bb0048996bbdeb236d6e5522ec9e0/examples/sparkline.rs
+//! [demo]: https://github.com/ratatui-org/ratatui/blob/main/examples/sparkline.rs
 
 use console_error_panic_hook::set_once as set_panic_hook;
 use crossterm::{execute, terminal::EnterAlternateScreen};
@@ -9,7 +9,7 @@ use rand::{
     rngs::StdRng,
     SeedableRng,
 };
-use tui::{
+use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
@@ -48,29 +48,32 @@ pub fn alt_run() -> Result<Option<AnimationFrameCallbackWrapper>, JsValue> {
     ));
     term.open(terminal_div);
 
-    let a = AnimationFrameCallbackWrapper::new().leak();
+    // Create animation frame wrappers without leaking
+    let animation_wrapper = AnimationFrameCallbackWrapper::new();
 
-    let mut b = 0;
-    a.safe_start(move || {
-        log!("heyo! {}", b);
-        b += 1;
+    let mut counter = 0;
+    let term_clone = term.clone();
+    animation_wrapper.start(move || {
+        log!("heyo! {}", counter);
+        counter += 1;
 
-        if b % 10 == 0 {
-            term.write(format!("ayo: {}\r\n", b));
+        if counter % 10 == 0 {
+            term_clone.write(&format!("ayo: {}\r\n", counter));
         }
-        if b % 600 == 0 {
-            term.reset()
+        if counter % 600 == 0 {
+            term_clone.reset();
         }
 
-        b != 3600
-    });
+        counter < 3600 // Stop after 3600 iterations
+    }).unwrap_or_else(|e| log!("Failed to start animation: {:?}", e));
 
-    let b = AnimationFrameCallbackWrapper::new().leak();
-    b.safe_start(move || {
-        log!("yak!");
+    // Store the wrapper to prevent it from being dropped
+    use std::sync::Mutex;
+    static ANIMATION_WRAPPERS: Mutex<Vec<AnimationFrameCallbackWrapper>> = Mutex::new(Vec::new());
 
-        true
-    });
+    if let Ok(mut wrappers) = ANIMATION_WRAPPERS.lock() {
+        wrappers.push(animation_wrapper);
+    }
 
     Ok(None)
 }
@@ -157,67 +160,80 @@ pub fn run() -> Result<Option<AnimationFrameCallbackWrapper>, JsValue> {
     execute!((&mut term_temp), EnterAlternateScreen).unwrap();
     drop(term_temp);
 
-    let term: &'static _ = Box::leak(Box::new(term));
-    let backend = CrosstermBackend::new(term);
+    // Store terminal in a static to avoid leaking but keep it alive
+    use std::sync::Mutex;
+    static TERMINAL_STORAGE: Mutex<Option<Terminal>> = Mutex::new(None);
 
-    let mut tui = TuiTerminal::new(backend).unwrap();
-    tui.hide_cursor().unwrap();
+    if let Ok(mut storage) = TERMINAL_STORAGE.lock() {
+        *storage = Some(term);
+        if let Some(ref stored_term) = *storage {
+            let backend = CrosstermBackend::new(stored_term);
+            let mut tui = TuiTerminal::new(backend).unwrap();
+            tui.hide_cursor().unwrap();
 
-    // Create default app state
-    let mut app = App::new(window.crypto().unwrap());
+            // Create default app state
+            let mut app = App::new(window.crypto().unwrap());
 
-    let main_loop = AnimationFrameCallbackWrapper::new().leak();
-    main_loop.safe_start(move || {
-        tui.draw(
-            |mut f: tui::terminal::Frame<'_, CrosstermBackend<'_, Vec<u8>>>| {
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .margin(2)
-                    .constraints(
-                        [
-                            Constraint::Length(3),
-                            Constraint::Length(3),
-                            Constraint::Length(7),
-                            Constraint::Min(0),
-                        ]
-                        .as_ref(),
-                    )
-                    .split(f.size());
-                let sparkline = Sparkline::default()
-                    .block(
-                        Block::default()
-                            .title("Data1")
-                            .borders(Borders::LEFT | Borders::RIGHT),
-                    )
-                    .data(&app.data1)
-                    .style(Style::default().fg(Color::Yellow));
-                f.render_widget(sparkline, chunks[0]);
-                let sparkline = Sparkline::default()
-                    .block(
-                        Block::default()
-                            .title("Data2")
-                            .borders(Borders::LEFT | Borders::RIGHT),
-                    )
-                    .data(&app.data2)
-                    .style(Style::default().bg(Color::Green));
-                f.render_widget(sparkline, chunks[1]);
-                // Multiline
-                let sparkline = Sparkline::default()
-                    .block(
-                        Block::default()
-                            .title("Data3")
-                            .borders(Borders::LEFT | Borders::RIGHT),
-                    )
-                    .data(&app.data3)
-                    .style(Style::default().fg(Color::Red));
-                f.render_widget(sparkline, chunks[2]);
-            },
-        )
-        .unwrap();
+            let main_loop = AnimationFrameCallbackWrapper::new();
+            main_loop.start(move || {
+                tui.draw(
+                    |f| {
+                        let chunks = Layout::default()
+                            .direction(Direction::Vertical)
+                            .margin(2)
+                            .constraints(
+                                [
+                                    Constraint::Length(3),
+                                    Constraint::Length(3),
+                                    Constraint::Length(7),
+                                    Constraint::Min(0),
+                                ]
+                                .as_ref(),
+                            )
+                            .split(f.size());
+                        let sparkline = Sparkline::default()
+                            .block(
+                                Block::default()
+                                    .title("Data1")
+                                    .borders(Borders::LEFT | Borders::RIGHT),
+                            )
+                            .data(&app.data1)
+                            .style(Style::default().fg(Color::Yellow));
+                        f.render_widget(sparkline, chunks[0]);
+                        let sparkline = Sparkline::default()
+                            .block(
+                                Block::default()
+                                    .title("Data2")
+                                    .borders(Borders::LEFT | Borders::RIGHT),
+                            )
+                            .data(&app.data2)
+                            .style(Style::default().bg(Color::Green));
+                        f.render_widget(sparkline, chunks[1]);
+                        // Multiline
+                        let sparkline = Sparkline::default()
+                            .block(
+                                Block::default()
+                                    .title("Data3")
+                                    .borders(Borders::LEFT | Borders::RIGHT),
+                            )
+                            .data(&app.data3)
+                            .style(Style::default().fg(Color::Red));
+                        f.render_widget(sparkline, chunks[2]);
+                    },
+                )
+                .unwrap();
 
-        app.update();
-        true
-    });
+                app.update();
+                true
+            }).unwrap_or_else(|e| log!("Failed to start animation: {:?}", e));
+
+            // Store the main loop to prevent it from being dropped
+            static MAIN_LOOP_STORAGE: Mutex<Option<AnimationFrameCallbackWrapper>> = Mutex::new(None);
+            if let Ok(mut storage) = MAIN_LOOP_STORAGE.lock() {
+                *storage = Some(main_loop);
+            }
+        }
+    }
 
     Ok(None)
 }

@@ -2,7 +2,7 @@
 name = "basic"
 version = "0.1.0"
 authors = ["Rahul Butani <rr.but.a.n.i+crates-io@gmail.com>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 workspace = ".."
@@ -10,12 +10,12 @@ workspace = ".."
 
 [dependencies]
 xterm-js-sys = { version = "4.6.0-alpha1" }
-wasm-bindgen = "0.2.63"
-console_error_panic_hook = "0.1.5"
-js-sys = "0.3.37"
+wasm-bindgen = "0.2.88"
+console_error_panic_hook = "0.1.7"
+js-sys = "0.3.64"
 
 [dependencies.web-sys]
-version = "0.3.37"
+version = "0.3.64"
 features = [
   'console',
   'Document',
@@ -34,6 +34,7 @@ crate-type = ["cdylib"]
 debug-js-glue = true
 demangle-name-section = true
 dwarf-debug-info = true
+reference-types = false
 
 [package.metadata.wasm-pack.profile.release]
 # The version of wasm-opt that wasm-pack bundles crashes on current wasm-bindgen
@@ -45,3 +46,4 @@ wasm-opt = false #["-O4"]
 debug-js-glue = false
 demangle-name-section = false
 dwarf-debug-info = false
+reference-types = false

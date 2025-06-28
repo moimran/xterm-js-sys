@@ -25,11 +25,11 @@ pub fn run() -> Result<(), JsValue> {
 
     // Use `web_sys`'s global `window` function to get a handle on the global
     // window object.
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
+    let window = web_sys::window().ok_or("no global `window` exists")?;
+    let document = window.document().ok_or("should have a document on window")?;
     let terminal_div = document
         .get_element_by_id("terminal")
-        .expect("should have a terminal div");
+        .ok_or("should have a terminal div")?;
 
     let term_orig = Terminal::new(Some(
         TerminalOptions::default()
@@ -82,18 +82,19 @@ pub fn run() -> Result<(), JsValue> {
         log!("[resize event] resize: {:?}", r);
     });
 
-    // Don't drop!
-    Box::leak(Box::new(l));
-    Box::leak(Box::new(b));
-    Box::leak(Box::new(d));
-    Box::leak(Box::new(r));
+    // Store event listeners by leaking them - this is the simplest approach for WASM
+    // where we don't have multiple threads to worry about
+    std::mem::forget(l);
+    std::mem::forget(b);
+    std::mem::forget(d);
+    std::mem::forget(r);
 
     let term = term_orig;
 
     term.focus();
 
-    term.write(String::from("\x1B[35;31m hello!\n"));
-    term.write(String::from("\x1B[1;3;31mxterm.js\x1B[0m with 🦀\n$ "));
+    term.write("\x1B[35;31m hello!\n".to_string());
+    term.write("\x1B[1;3;31mxterm.js\x1B[0m with 🦀\n$ ".to_string());
 
     Ok(())
 }

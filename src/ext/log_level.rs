@@ -3,6 +3,7 @@
 use crate::xterm::LogLevel;
 
 use log::Level;
+use std::convert::TryFrom;
 
 impl From<Level> for LogLevel {
     fn from(level: Level) -> LogLevel {
@@ -27,7 +28,7 @@ impl From<Option<Level>> for LogLevel {
 /// the [`LogLevel`] was [`Off`](LogLevel::Off).
 pub struct LogLevelIsOff;
 
-impl std::convert::TryFrom<LogLevel> for Level {
+impl TryFrom<LogLevel> for Level {
     type Error = LogLevelIsOff;
 
     #[allow(clippy::match_wildcard_for_single_variants)]

@@ -43,8 +43,10 @@ impl<D: XtermDisposable> DisposableWrapper<D> {
     /// Pulls the inner [`XtermDisposable`] implementation (`D`) out of the
     /// wrapper, making it so that [`dispose`] is not called on [`Drop`].
     ///
+    /// Returns `None` if the wrapper has already been disposed.
+    ///
     /// [`dispose`]: XtermDisposable::dispose
-    pub fn manually_dispose(mut self) -> D {
+    pub fn manually_dispose(mut self) -> Option<D> {
         // Every method we offer (other than the Drop impl) assume that inner
         // will be `Some`.
         //
@@ -53,7 +55,7 @@ impl<D: XtermDisposable> DisposableWrapper<D> {
         // from `Some` to `None`. Because this method takes the wrapper by value
         // (consumes it), this is okay; none of the methods (other than `drop`)
         // can be called on this wrapper after this method is called.
-        self.inner.take().unwrap()
+        self.inner.take()
     }
 }
 
@@ -67,13 +69,13 @@ impl<D: XtermDisposable> Deref for DisposableWrapper<D> {
     type Target = D;
 
     fn deref(&self) -> &D {
-        self.inner.as_ref().unwrap()
+        self.inner.as_ref().expect("DisposableWrapper has already been disposed")
     }
 }
 
 impl<D: XtermDisposable> DerefMut for DisposableWrapper<D> {
     fn deref_mut(&mut self) -> &mut D {
-        self.inner.as_mut().unwrap()
+        self.inner.as_mut().expect("DisposableWrapper has already been disposed")
     }
 }
 

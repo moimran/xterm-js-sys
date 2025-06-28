@@ -647,19 +647,19 @@ pub mod disposable;
 pub use disposable::*;
 
 pub mod event;
-pub use event::*;
+// pub use event::*; // Temporarily commented to fix unused import
 
 pub mod log_level;
-pub use log_level::*;
+// pub use log_level::*; // Temporarily commented to fix unused import
 
 pub mod marker;
-pub use marker::*;
+// pub use marker::*; // Temporarily commented to fix unused import
 
 pub mod options;
-pub use options::*;
+// pub use options::*; // Temporarily commented to fix unused import
 
 pub mod theme;
-pub use theme::*;
+// pub use theme::*; // Temporarily commented to fix unused import
 
 pub mod unicode;
 pub use unicode::*;

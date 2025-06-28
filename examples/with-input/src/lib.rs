@@ -1,6 +1,6 @@
-//! This is a port of the [crossterm demo in the tui crate][demo].
+//! This is a port of the [crossterm demo in the ratatui crate][demo].
 //!
-//! [demo]: https://github.com/fdehau/tui-rs/blob/3f62ce9c199bb0048996bbdeb236d6e5522ec9e0/examples/crossterm_demo.rs
+//! [demo]: https://github.com/ratatui-org/ratatui/blob/main/examples/crossterm_demo.rs
 
 use console_error_panic_hook::set_once as set_panic_hook;
 use crossterm::{
@@ -10,7 +10,7 @@ use crossterm::{
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures_util::stream::StreamExt;
-use tui::{backend::CrosstermBackend, Terminal as TuiTerminal};
+use ratatui::{backend::CrosstermBackend, Terminal as TuiTerminal};
 use wasm_bindgen::prelude::*;
 use xterm_js_sys::{
     crossterm_support::XtermJsCrosstermBackend,
@@ -55,33 +55,47 @@ pub async fn run() -> Result<(), JsValue> {
         .unwrap();
     drop(term_temp);
 
-    let term: &'static _ = Box::leak(Box::new(term));
-    let backend = CrosstermBackend::new(term);
+    // Store terminal in a static to avoid leaking but keep it alive
+    use std::sync::Mutex;
+    static TERMINAL_STORAGE: Mutex<Option<Terminal>> = Mutex::new(None);
 
-    term.resize(200, 45);
-    term.focus();
+    if let Ok(mut storage) = TERMINAL_STORAGE.lock() {
+        *storage = Some(term);
+        if let Some(ref stored_term) = *storage {
+            let backend = CrosstermBackend::new(stored_term);
 
-    let mut tui = TuiTerminal::new(backend).unwrap();
-    tui.hide_cursor().unwrap();
+            stored_term.resize(200, 45);
+            stored_term.focus();
 
-    // Create default app state
-    let app = app::App::new(window.crypto().unwrap(), "Demo", true);
-    let app = Arc::new(RwLock::new(app));
+            let mut tui = TuiTerminal::new(backend).unwrap();
+            tui.hide_cursor().unwrap();
 
-    let main_loop = AnimationFrameCallbackWrapper::new().leak();
-    let app_draw = app.clone();
-    main_loop.safe_start(move || {
-        let mut app = app_draw.write().unwrap();
-        tui.draw(
-            |mut f: tui::terminal::Frame<'_, CrosstermBackend<'_, Vec<u8>>>| {
-                ui::draw(&mut f, &mut app)
-            },
-        )
-        .unwrap();
+            // Create default app state
+            let app = app::App::new(window.crypto().unwrap(), "Demo", true);
+            let app = Arc::new(RwLock::new(app));
 
-        app.on_tick();
-        !app.should_quit
-    });
+            let main_loop = AnimationFrameCallbackWrapper::new();
+            let app_draw = app.clone();
+            main_loop.start(move || {
+                let mut app = app_draw.write().unwrap();
+                tui.draw(
+                    |f| {
+                        ui::draw(f, &mut app)
+                    },
+                )
+                .unwrap();
+
+                app.on_tick();
+                !app.should_quit
+            }).unwrap_or_else(|e| log!("Failed to start animation: {:?}", e));
+
+            // Store the main loop to prevent it from being dropped
+            static MAIN_LOOP_STORAGE: Mutex<Option<AnimationFrameCallbackWrapper>> = Mutex::new(None);
+            if let Ok(mut storage) = MAIN_LOOP_STORAGE.lock() {
+                *storage = Some(main_loop);
+            }
+        }
+    }
 
     let mut s = EventStream::new(&term);
 

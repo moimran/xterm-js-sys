@@ -15,28 +15,19 @@
 //! ></iframe>
 
 #![forbid(
-    const_err,
-    dead_code,
     improper_ctypes,
     non_shorthand_field_patterns,
     no_mangle_generic_items,
     overflowing_literals,
-    path_statements,
     patterns_in_fns_without_body,
-    private_in_public,
     unconditional_recursion,
-    unused_allocation,
     unused_lifetimes,
     unused_comparisons,
-    unused_parens,
     while_true
 )]
 #![deny(
-    unused,
     bad_style,
     missing_debug_implementations,
-    intra_doc_link_resolution_failure,
-    missing_docs,
     unsafe_code,
     trivial_casts,
     trivial_numeric_casts,
@@ -47,6 +38,8 @@
     rust_2018_idioms,
     variant_size_differences
 )]
+#![warn(missing_docs)]
+#![warn(unused, dead_code)]
 #![deny(clippy::all, clippy::pedantic, clippy::cargo)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![allow(clippy::type_repetition_in_bounds)]
